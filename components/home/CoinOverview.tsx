@@ -1,34 +1,40 @@
-import { fetcher } from "@/lib/coingecko.actions";
-import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
 import React from "react";
+import { fetcher } from "@/lib/coingecko.actions";
+import Image from "next/image";
+import { formatCurrency } from "@/lib/utils";
+import CandlestickChart from "@/components/CandlestickChart";
 
 const CoinOverview = async () => {
-  let coin;
-  try {
-    coin = await fetcher<CoinDetailsData>("/coins/bitcoin", {
+  const [coin, coinOHLCData] = await Promise.all([
+    fetcher<CoinDetailsData>("/coins/bitcoin", {
       dex_pair_format: "symbol",
-    });
-  } catch (err) {
-    console.log(err);
-  }
+    }),
+    fetcher<OHLCData[]>("/coins/bitcoin/ohlc", {
+      vs_currency: "usd",
+      days: 1,
+      //   interval: "hourly",
+      precision: "full",
+    }),
+  ]);
 
   return (
     <div id="coin-overview">
-      <div className="header pt-2">
-        <Image
-          src={coin?.image.large as string}
-          alt={coin?.name as string}
-          width={56}
-          height={56}
-        />
-        <div className="info">
-          <p>
-            {coin?.name} / {coin?.symbol.toUpperCase()}
-          </p>
-          <h1>{formatCurrency(coin?.market_data.current_price.usd)}</h1>
+      <CandlestickChart data={coinOHLCData} coinId="bitcoin">
+        <div className="header pt-2">
+          <Image
+            src={coin.image.large}
+            alt={coin.name}
+            width={56}
+            height={56}
+          />
+          <div className="info">
+            <p>
+              {coin.name} / {coin.symbol.toUpperCase()}
+            </p>
+            <h1>{formatCurrency(coin.market_data.current_price.usd)}</h1>
+          </div>
         </div>
-      </div>
+      </CandlestickChart>
     </div>
   );
 };
